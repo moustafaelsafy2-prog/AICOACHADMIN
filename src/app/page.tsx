@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FiTrash2, FiPlus, FiMinus, FiShoppingBag, FiCheckCircle, FiX, FiPrinter } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiMinus, FiShoppingBag, FiCheckCircle, FiX, FiPrinter, FiSearch } from 'react-icons/fi';
 import Image from 'next/image';
 import { useSettings } from '@/contexts/SettingsContext';
 import Receipt from '@/components/Receipt';
@@ -11,7 +11,10 @@ type Product = {
   name: string;
   price: number;
   stock: number;
-  imageUrl?: string;
+  unit?: string;
+  type?: string;
+  barcode?: string | null;
+  imageUrl?: string | null;
 };
 
 type CartItem = Product & {
@@ -24,6 +27,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const [shift, setShift] = useState<any>(null);
+  const [startCash, setStartCash] = useState('');
 
   const { settings } = useSettings();
   const currency = settings?.currency || 'ر.س';
@@ -42,7 +49,46 @@ export default function Home() {
 
   useEffect(() => {
     fetchProducts();
+    fetchShift();
   }, []);
+
+  const fetchShift = async () => {
+    try {
+      const res = await fetch('/api/shifts');
+      const data = await res.json();
+      setShift(data);
+    } catch (error) {
+      console.error('Failed to fetch shift status');
+    }
+  };
+
+  const handleOpenShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'OPEN', startCash: parseFloat(startCash) || 0 })
+      });
+      if (res.ok) fetchShift();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleCloseShift = async () => {
+    if(!confirm('هل أنت متأكد من إنهاء الوردية الحالية؟')) return;
+    try {
+      const res = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'CLOSE', endCash: 0 }) // For full feature, would ask for actual end cash
+      });
+      if (res.ok) fetchShift();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -112,15 +158,104 @@ export default function Home() {
     window.print();
   };
 
-  if (loading) return <div className="p-8 text-center text-xl">جاري التحميل...</div>;
+  const handleBarcodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput) return;
+
+    // First try finding by barcode, then by exact name
+    const foundProduct = products.find(p =>
+      p.barcode === barcodeInput || p.name.toLowerCase() === barcodeInput.toLowerCase()
+    );
+
+    if (foundProduct) {
+      addToCart(foundProduct);
+      setBarcodeInput(''); // clear input
+    } else {
+      alert('المنتج غير موجود');
+    }
+
+    // Keep focus for next scan
+    if (barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  };
+
+  // Keep scanner input focused when clicking anywhere outside inputs
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && target.tagName !== 'SELECT' && barcodeInputRef.current) {
+        barcodeInputRef.current.focus();
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  if (loading || !shift) return <div className="p-8 text-center text-xl">جاري التحميل...</div>;
+
+  if (shift.status === 'CLOSED') {
+    return (
+      <main className="flex h-full items-center justify-center bg-slate-50">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+          <div className="bg-indigo-100 text-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FiCheckCircle className="text-3xl" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">بدء وردية جديدة</h2>
+          <p className="text-slate-500 mb-8">يجب عليك فتح وردية جديدة لبدء المبيعات واستقبال الطلبات.</p>
+          <form onSubmit={handleOpenShift} className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">النقدية الافتتاحية في الدرج</label>
+              <input
+                type="number"
+                required
+                value={startCash}
+                onChange={e => setStartCash(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-left"
+                dir="ltr"
+                placeholder="0.00"
+              />
+            </div>
+            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all">
+              فتح الوردية الآن
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex h-full overflow-hidden bg-slate-50 text-slate-900">
       {/* Products Section */}
       <section className="flex-1 p-8 overflow-y-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800">المنتجات</h1>
-          <p className="text-slate-500 mt-1">اختر المنتجات لإضافتها إلى السلة</p>
+        <header className="mb-8 flex justify-between items-end">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-800">المنتجات</h1>
+              <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> وردية مفتوحة
+              </span>
+              <button onClick={handleCloseShift} className="text-xs text-rose-500 hover:text-rose-700 underline font-medium">إنهاء الوردية</button>
+            </div>
+            <p className="text-slate-500 mt-1">اختر المنتجات لإضافتها إلى السلة أو امسح الباركود</p>
+          </div>
+          <form onSubmit={handleBarcodeSubmit} className="relative w-72">
+            <input
+              ref={barcodeInputRef}
+              type="text"
+              autoFocus
+              placeholder="امسح الباركود أو ابحث..."
+              className="w-full pl-4 pr-12 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none text-left"
+              dir="ltr"
+              value={barcodeInput}
+              onChange={e => setBarcodeInput(e.target.value)}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+               <FiSearch className="text-xl" />
+            </div>
+            <button type="submit" className="hidden">بحث</button>
+          </form>
         </header>
 
         {products.length === 0 ? (

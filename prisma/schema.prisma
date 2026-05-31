@@ -13,8 +13,20 @@ model User {
   email     String   @unique
   password  String
   role      String   @default("CASHIER") // "ADMIN" or "CASHIER"
+  shifts    Shift[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Shift {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  startTime   DateTime  @default(now())
+  endTime     DateTime?
+  startCash   Float     @default(0)
+  endCash     Float?
+  status      String    @default("OPEN") // "OPEN", "CLOSED"
 }
 
 model Category {
@@ -39,10 +51,24 @@ model Product {
   updatedAt   DateTime    @updatedAt
 }
 
+model Customer {
+  id          Int       @id @default(autoincrement())
+  name        String
+  phone       String?
+  email       String?
+  orders      Order[]
+  balance     Float     @default(0) // For tracking debt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Order {
   id          Int         @id @default(autoincrement())
   totalAmount Float
   items       OrderItem[]
+  customerId  Int?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  paymentType String      @default("CASH") // "CASH", "CARD", "DEBT"
   createdAt   DateTime    @default(now())
 }
 
