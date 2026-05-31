@@ -18,10 +18,6 @@ export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products');
@@ -33,6 +29,10 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
@@ -94,7 +94,7 @@ export default function Home() {
   if (loading) return <div className="p-8 text-center text-xl">جاري التحميل...</div>;
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gray-50 text-gray-900">
+    <main className="flex h-full overflow-hidden bg-gray-50 text-gray-900">
       {/* Products Section */}
       <section className="flex-1 p-6 overflow-y-auto">
         <header className="mb-6">

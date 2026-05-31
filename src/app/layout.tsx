@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
+import Providers from "@/components/Providers";
+import Sidebar from "@/components/Sidebar";
 
 const cairo = Cairo({ subsets: ["latin", "arabic"] });
 
@@ -16,8 +18,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${cairo.className} bg-gray-50 text-gray-900 min-h-screen antialiased`}>
-        {children}
+      <body className={`${cairo.className} bg-gray-50 text-gray-900 min-h-screen antialiased flex overflow-hidden`}>
+        <Providers>
+          <Sidebar />
+          <div className="flex-1 h-screen overflow-y-auto">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );
