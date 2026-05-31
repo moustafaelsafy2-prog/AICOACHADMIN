@@ -3,3 +3,36 @@
 @theme {
   --font-sans: var(--font-cairo);
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make only the receipt visible */
+  .print-area, .print-area * {
+    visibility: visible;
+  }
+
+  /* Position it at the top left of the page */
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Thermal printer standard width */
+  .receipt-container {
+    width: 80mm !important;
+    margin: 0 auto !important;
+  }
+
+  /* Ensure background colors/borders print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

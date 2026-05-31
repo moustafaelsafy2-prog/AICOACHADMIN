@@ -15,10 +15,14 @@ type Category = {
   name: string;
 };
 
+import { useSettings } from '@/contexts/SettingsContext';
+
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSettings();
+  const currency = settings?.currency || 'ر.س';
 
   // Form states
   const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', categoryId: '', imageUrl: '' });
@@ -206,7 +210,7 @@ export default function InventoryPage() {
                   <td className="px-6 py-4">{p.id}</td>
                   <td className="px-6 py-4 font-medium">{p.name}</td>
                   <td className="px-6 py-4 text-gray-500">{p.category?.name || '-'}</td>
-                  <td className="px-6 py-4 text-blue-600 font-bold">{p.price} ر.س</td>
+                  <td className="px-6 py-4 text-blue-600 font-bold">{p.price} {currency}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.stock < 10 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                       {p.stock}

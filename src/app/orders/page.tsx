@@ -16,9 +16,13 @@ type Order = {
   items: OrderItem[];
 };
 
+import { useSettings } from '@/contexts/SettingsContext';
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings } = useSettings();
+  const currency = settings?.currency || 'ر.س';
 
   const fetchOrders = async () => {
     try {
@@ -74,12 +78,12 @@ export default function OrdersPage() {
                     <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
                       {order.items.map(item => (
                         <li key={item.id}>
-                          {item.product?.name} <span className="text-gray-400">({item.quantity} × {item.price} ر.س)</span>
+                          {item.product?.name} <span className="text-gray-400">({item.quantity} × {item.price} {currency})</span>
                         </li>
                       ))}
                     </ul>
                   </td>
-                  <td className="px-6 py-4 font-bold text-lg">{order.totalAmount.toFixed(2)} ر.س</td>
+                  <td className="px-6 py-4 font-bold text-lg">{order.totalAmount.toFixed(2)} {currency}</td>
                 </tr>
               ))}
               {orders.length === 0 && (

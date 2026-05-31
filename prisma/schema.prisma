@@ -55,3 +55,15 @@ model OrderItem {
   quantity  Int
   price     Float
 }
+
+model Settings {
+  id                Int      @id @default(autoincrement())
+  companyName       String   @default("نظام نقاط البيع")
+  companyLogo       String?
+  companyAddress    String?
+  companyPhone      String?
+  currency          String   @default("ر.س")
+  taxRate           Float    @default(15.0)
+  receiptFooterText String?  @default("شكراً لتسوقكم معنا")
+  updatedAt         DateTime @updatedAt
+}

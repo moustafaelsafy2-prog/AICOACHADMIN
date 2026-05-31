@@ -40,6 +40,18 @@ async function main() {
       ]
     })
   }
+
+  // Initialize Settings
+  const settingsCount = await prisma.settings.count()
+  if (settingsCount === 0) {
+    await prisma.settings.create({
+      data: {
+        companyName: 'نظام نقاط البيع الاحترافي',
+        currency: 'ر.س',
+        taxRate: 15.0,
+      }
+    })
+  }
 }
 
 main()

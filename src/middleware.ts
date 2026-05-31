@@ -5,7 +5,7 @@ export default withAuth(
   function middleware(req) {
     // Admin only routes protection
     if (
-      (req.nextUrl.pathname.startsWith("/accounts") || req.nextUrl.pathname.startsWith("/inventory")) &&
+      (req.nextUrl.pathname.startsWith("/accounts") || req.nextUrl.pathname.startsWith("/inventory") || req.nextUrl.pathname.startsWith("/settings")) &&
       req.nextauth.token?.role !== "ADMIN"
     ) {
       return NextResponse.redirect(new URL("/", req.url));
@@ -27,8 +27,10 @@ export const config = {
     "/orders",
     "/inventory",
     "/accounts",
+    "/settings",
     "/api/categories/:path*",
     "/api/products/:path*",
     "/api/orders/:path*",
+    "/api/settings/:path*",
   ],
 };

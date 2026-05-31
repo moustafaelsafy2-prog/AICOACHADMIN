@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { FiShoppingCart, FiList, FiBox, FiUsers, FiLogOut } from 'react-icons/fi';
+import { FiShoppingCart, FiList, FiBox, FiUsers, FiLogOut, FiSettings } from 'react-icons/fi';
 import { HiOutlineSparkles } from 'react-icons/hi';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { settings } = useSettings();
 
   if (!session) return null;
 
@@ -20,14 +22,20 @@ export default function Sidebar() {
 
   if (session.user?.role === 'ADMIN') {
     links.push({ href: '/accounts', label: 'الحسابات', icon: <FiUsers className="text-xl" /> });
+    links.push({ href: '/settings', label: 'الإعدادات', icon: <FiSettings className="text-xl" /> });
   }
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen flex-shrink-0 relative z-20 shadow-2xl">
       <div className="p-6 border-b border-slate-800/50 bg-slate-900/50">
-        <div className="flex items-center justify-center gap-2 mb-2 text-indigo-400">
-            <HiOutlineSparkles className="text-2xl" />
-            <h2 className="text-2xl font-bold tracking-tight text-white">نظام POS</h2>
+        <div className="flex flex-col items-center justify-center gap-2 mb-2 text-indigo-400">
+            {settings?.companyLogo ? (
+               // eslint-disable-next-line @next/next/no-img-element
+               <img src={settings.companyLogo} alt="Logo" className="h-12 object-contain" />
+            ) : (
+              <HiOutlineSparkles className="text-3xl" />
+            )}
+            <h2 className="text-xl font-bold tracking-tight text-white text-center">{settings?.companyName || "نظام POS"}</h2>
         </div>
         <div className="text-center text-sm text-slate-400 font-medium">
           {session.user?.name}
