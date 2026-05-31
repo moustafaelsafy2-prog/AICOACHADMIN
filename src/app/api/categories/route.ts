@@ -10,7 +10,15 @@ export async function GET() {
   }
 }
 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { name } = await request.json();
     const category = await prisma.category.create({

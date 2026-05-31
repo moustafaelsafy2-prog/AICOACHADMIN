@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { FiTrash2, FiPlus, FiMinus, FiShoppingBag, FiCheckCircle } from 'react-icons/fi';
+import Image from 'next/image';
 
 type Product = {
   id: number;
   name: string;
   price: number;
   stock: number;
+  imageUrl?: string;
 };
 
 type CartItem = Product & {
@@ -94,32 +97,41 @@ export default function Home() {
   if (loading) return <div className="p-8 text-center text-xl">جاري التحميل...</div>;
 
   return (
-    <main className="flex h-full overflow-hidden bg-gray-50 text-gray-900">
+    <main className="flex h-full overflow-hidden bg-slate-50 text-slate-900">
       {/* Products Section */}
-      <section className="flex-1 p-6 overflow-y-auto">
-        <header className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">المنتجات</h1>
-          <p className="text-gray-500">اختر المنتجات لإضافتها إلى السلة</p>
+      <section className="flex-1 p-8 overflow-y-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800">المنتجات</h1>
+          <p className="text-slate-500 mt-1">اختر المنتجات لإضافتها إلى السلة</p>
         </header>
 
         {products.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            لا توجد منتجات. الرجاء إضافة منتجات من قاعدة البيانات.
+          <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300">
+            لا توجد منتجات حالياً.
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {products.map((product) => (
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 flex flex-col items-center text-center gap-2"
+                className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col items-center text-center gap-3 transform hover:-translate-y-1 group"
               >
-                <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-2xl font-bold mb-2">
-                  {product.name.charAt(0)}
+                <div className="w-24 h-24 bg-indigo-50/50 rounded-xl flex items-center justify-center mb-1 overflow-hidden relative group-hover:bg-indigo-100 transition-colors border border-indigo-50">
+                  {product.imageUrl ? (
+                     // eslint-disable-next-line @next/next/no-img-element
+                     <img src={product.imageUrl} alt={product.name} className="object-cover w-full h-full" />
+                  ) : (
+                    <span className="text-indigo-400 text-4xl font-bold">{product.name.charAt(0)}</span>
+                  )}
                 </div>
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="text-blue-600 font-bold">{product.price} ر.س</p>
-                <p className="text-xs text-gray-400">المخزون: {product.stock}</p>
+                <div className="flex-1 flex flex-col justify-between w-full">
+                  <h3 className="font-bold text-slate-700 line-clamp-2 text-sm mb-1">{product.name}</h3>
+                  <div>
+                    <p className="text-indigo-600 font-black text-lg">{product.price} ر.س</p>
+                    <p className={`text-xs mt-1 font-medium ${product.stock < 10 ? 'text-rose-500' : 'text-slate-400'}`}>المخزون: {product.stock}</p>
+                  </div>
+                </div>
               </button>
             ))}
           </div>
@@ -127,44 +139,48 @@ export default function Home() {
       </section>
 
       {/* Cart Section */}
-      <aside className="w-96 bg-white border-r border-gray-200 flex flex-col shadow-lg z-10">
-        <header className="p-6 border-b border-gray-100 bg-gray-50">
-          <h2 className="text-2xl font-bold text-gray-800">سلة المشتريات</h2>
+      <aside className="w-[400px] bg-white border-r border-slate-200 flex flex-col shadow-2xl z-10 relative">
+        <header className="p-6 border-b border-slate-100 bg-white flex items-center gap-3">
+          <div className="bg-indigo-100 p-2.5 rounded-xl text-indigo-600">
+            <FiShoppingBag className="text-2xl" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">سلة المشتريات</h2>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 bg-slate-50/50">
           {cart.length === 0 ? (
-            <div className="text-center text-gray-400 mt-20">السلة فارغة</div>
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+               <FiShoppingBag className="text-6xl mb-4" />
+               <p className="text-lg font-medium">السلة فارغة حالياً</p>
+            </div>
           ) : (
             cart.map((item) => (
-              <div key={item.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+              <div key={item.id} className="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm border border-slate-100 hover:border-indigo-100 transition-colors">
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-800">{item.name}</h4>
-                  <div className="text-blue-600 font-bold text-sm">{item.price} ر.س</div>
+                  <h4 className="font-bold text-slate-800">{item.name}</h4>
+                  <div className="text-indigo-600 font-bold mt-1">{item.price} ر.س</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center bg-white rounded-md border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center bg-slate-50 rounded-lg border border-slate-200">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors rounded-r-md"
+                      className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors rounded-r-lg"
                     >
-                      -
+                      <FiMinus />
                     </button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
+                    <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors rounded-l-md"
+                      className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors rounded-l-lg"
                     >
-                      +
+                      <FiPlus />
                     </button>
                   </div>
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                    className="text-slate-300 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <FiTrash2 className="text-lg" />
                   </button>
                 </div>
               </div>
@@ -172,21 +188,22 @@ export default function Home() {
           )}
         </div>
 
-        <footer className="p-6 bg-gray-50 border-t border-gray-200">
-          <div className="flex justify-between items-center mb-6">
-            <span className="text-gray-600 font-medium">الإجمالي:</span>
-            <span className="text-3xl font-bold text-gray-900">{total.toFixed(2)} ر.س</span>
+        <footer className="p-6 bg-white border-t border-slate-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+          <div className="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl">
+            <span className="text-slate-600 font-bold">الإجمالي المطلوب:</span>
+            <span className="text-3xl font-black text-indigo-700">{total.toFixed(2)} ر.س</span>
           </div>
           <button
             onClick={handleCheckout}
             disabled={cart.length === 0}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+            className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
               cart.length > 0
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 transform active:scale-[0.98]'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
           >
-            إتمام الدفع
+            <FiCheckCircle className="text-xl" />
+            إتمام عملية الدفع
           </button>
         </footer>
       </aside>

@@ -37,24 +37,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 inset-x-0 h-64 bg-indigo-600 [clip-path:polygon(0_0,100%_0,100%_40%,0_100%)] z-0"></div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <h2 className="mt-6 text-center text-4xl font-extrabold text-white tracking-tight">
           نظام نقاط البيع
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-center text-sm text-indigo-100 font-medium">
           الرجاء تسجيل الدخول للمتابعة
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white py-10 px-6 shadow-2xl sm:rounded-2xl sm:px-12 border border-slate-100/50">
+          <form className="space-y-7" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+              <div className="bg-rose-50 border-r-4 border-rose-500 p-4 rounded-lg">
                 <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="mr-3">
+                    <p className="text-sm text-rose-700 font-medium">{error}</p>
                   </div>
                 </div>
               </div>
@@ -63,11 +66,11 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-bold text-slate-700 mb-2"
               >
                 البريد الإلكتروني
               </label>
-              <div className="mt-1">
+              <div>
                 <input
                   id="email"
                   name="email"
@@ -76,8 +79,9 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-left"
+                  className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-left transition-shadow"
                   dir="ltr"
+                  placeholder="admin@pos.com"
                 />
               </div>
             </div>
@@ -85,11 +89,11 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-bold text-slate-700 mb-2"
               >
                 كلمة المرور
               </label>
-              <div className="mt-1">
+              <div>
                 <input
                   id="password"
                   name="password"
@@ -98,21 +102,22 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-left"
+                  className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-left transition-shadow"
                   dir="ltr"
+                  placeholder="••••••••"
                 />
               </div>
             </div>
 
-            <div>
+            <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                  loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                className={`w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-[15px] font-bold text-white transition-all duration-200 ${
+                  loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform active:scale-[0.98]'
                 }`}
               >
-                {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+                {loading ? 'جاري التحقق...' : 'تسجيل الدخول'}
               </button>
             </div>
           </form>

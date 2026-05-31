@@ -21,7 +21,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
 
   // Form states
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', categoryId: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', stock: '', categoryId: '', imageUrl: '' });
   const [newCategory, setNewCategory] = useState({ name: '' });
 
   const fetchData = async () => {
@@ -54,10 +54,11 @@ export default function InventoryPage() {
           price: parseFloat(newProduct.price),
           stock: parseInt(newProduct.stock),
           categoryId: newProduct.categoryId ? parseInt(newProduct.categoryId) : null,
+          imageUrl: newProduct.imageUrl || null,
         }),
       });
       if (res.ok) {
-        setNewProduct({ name: '', price: '', stock: '', categoryId: '' });
+        setNewProduct({ name: '', price: '', stock: '', categoryId: '', imageUrl: '' });
         fetchData();
       } else {
          alert('حدث خطأ. تأكد من أنك تملك صلاحيات كافية.');
@@ -134,6 +135,10 @@ export default function InventoryPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">المخزون</label>
                 <input required type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">رابط الصورة (اختياري)</label>
+              <input type="url" value={newProduct.imageUrl} onChange={e => setNewProduct({...newProduct, imageUrl: e.target.value})} className="w-full px-3 py-2 border rounded-md text-left" dir="ltr" placeholder="https://example.com/image.png" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">التصنيف</label>

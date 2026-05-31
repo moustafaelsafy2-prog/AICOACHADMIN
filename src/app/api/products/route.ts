@@ -12,9 +12,17 @@ export async function GET() {
   }
 }
 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
+
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const { name, price, stock, categoryId, barcode } = await request.json();
+    const { name, price, stock, categoryId, barcode, imageUrl } = await request.json();
     const product = await prisma.product.create({
       data: {
         name,
@@ -22,6 +30,7 @@ export async function POST(request: Request) {
         stock,
         categoryId,
         barcode,
+        imageUrl,
       },
     });
     return NextResponse.json(product, { status: 201 });
