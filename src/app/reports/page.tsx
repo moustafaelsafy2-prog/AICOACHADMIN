@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiActivity } from 'react-icons/fi';
+import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiActivity, FiTruck } from 'react-icons/fi';
 
 type ReportData = {
   totalSales: number;
   totalOrdersCount: number;
   todaysSales: number;
+  totalDeliveries: number;
+  totalDeliveryFees: number;
   topProducts: { name: string, quantity: number, revenue: number }[];
 };
 
@@ -43,14 +45,14 @@ export default function ReportsPage() {
       </header>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
           <div className="bg-indigo-100 text-indigo-600 p-4 rounded-xl">
             <FiDollarSign className="text-2xl" />
           </div>
           <div>
             <p className="text-slate-500 text-sm font-bold mb-1">إجمالي المبيعات (تراكمي)</p>
-            <h3 className="text-2xl font-black text-slate-800">{data.totalSales.toFixed(2)} {currency}</h3>
+            <h3 className="text-xl font-black text-slate-800">{data.totalSales.toFixed(2)} {currency}</h3>
           </div>
         </div>
 
@@ -60,7 +62,7 @@ export default function ReportsPage() {
           </div>
           <div>
             <p className="text-slate-500 text-sm font-bold mb-1">مبيعات اليوم</p>
-            <h3 className="text-2xl font-black text-slate-800">{data.todaysSales.toFixed(2)} {currency}</h3>
+            <h3 className="text-xl font-black text-slate-800">{data.todaysSales.toFixed(2)} {currency}</h3>
           </div>
         </div>
 
@@ -69,8 +71,18 @@ export default function ReportsPage() {
             <FiShoppingBag className="text-2xl" />
           </div>
           <div>
-            <p className="text-slate-500 text-sm font-bold mb-1">إجمالي الطلبات الفواتير</p>
-            <h3 className="text-2xl font-black text-slate-800">{data.totalOrdersCount}</h3>
+            <p className="text-slate-500 text-sm font-bold mb-1">إجمالي الطلبات</p>
+            <h3 className="text-xl font-black text-slate-800">{data.totalOrdersCount}</h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="bg-sky-100 text-sky-600 p-4 rounded-xl">
+            <FiTruck className="text-2xl" />
+          </div>
+          <div>
+            <p className="text-slate-500 text-sm font-bold mb-1">التوصيل / الرسوم</p>
+            <h3 className="text-xl font-black text-slate-800">{data.totalDeliveries} <span className="text-xs text-slate-500 font-medium">({data.totalDeliveryFees} {currency})</span></h3>
           </div>
         </div>
       </div>

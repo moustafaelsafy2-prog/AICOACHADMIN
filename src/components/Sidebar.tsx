@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { FiShoppingCart, FiList, FiBox, FiUsers, FiLogOut, FiSettings, FiPieChart } from 'react-icons/fi';
+import { FiShoppingCart, FiList, FiBox, FiUsers, FiLogOut, FiSettings, FiPieChart, FiTruck } from 'react-icons/fi';
 import { HiOutlineSparkles } from 'react-icons/hi';
 import { useSettings } from '@/contexts/SettingsContext';
 
@@ -19,6 +19,7 @@ export default function Sidebar() {
     { href: '/orders', label: 'سجل المبيعات', icon: <FiList className="text-xl" /> },
     { href: '/inventory', label: 'المخزون', icon: <FiBox className="text-xl" /> },
     { href: '/customers', label: 'العملاء', icon: <FiUsers className="text-xl" /> },
+    { href: '/delivery', label: 'التوصيل', icon: <FiTruck className="text-xl" /> },
   ];
 
   if (session.user?.role === 'ADMIN') {

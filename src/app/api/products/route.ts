@@ -4,7 +4,14 @@ import prisma from '@/lib/prisma';
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
-      include: { category: true },
+      include: {
+        category: true,
+        recipeItems: {
+          include: {
+            ingredient: true
+          }
+        }
+      },
     });
     return NextResponse.json(products);
   } catch (error) {
@@ -22,19 +29,37 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { name, price, stock, categoryId, barcode, imageUrl } = await request.json();
+    const { name, price, stock, categoryId, barcode, imageUrl, type, unit, ingredients } = await request.json();
+
+    const productData: any = {
+      name,
+      price,
+      stock: type === 'COMPOSITE' ? 0 : stock,
+      categoryId,
+      barcode,
+      imageUrl,
+      type: type || 'STANDARD',
+      unit: unit || 'قطعة'
+    };
+
+    if (type === 'COMPOSITE' && ingredients && ingredients.length > 0) {
+      productData.recipeItems = {
+        create: ingredients.map((ing: any) => ({
+          ingredientId: ing.ingredientId,
+          quantity: ing.quantity
+        }))
+      };
+    }
+
     const product = await prisma.product.create({
-      data: {
-        name,
-        price,
-        stock,
-        categoryId,
-        barcode,
-        imageUrl,
-      },
+      data: productData,
+      include: {
+        recipeItems: true
+      }
     });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
   }
 }

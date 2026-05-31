@@ -24,7 +24,12 @@ export async function GET() {
     const todaysOrders = orders.filter(o => new Date(o.createdAt) >= today);
     const todaysSales = todaysOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 
-    // 3. Top Selling Products
+    // 3. Delivery Stats
+    const deliveryOrders = orders.filter(o => o.type === 'DELIVERY');
+    const totalDeliveryFees = deliveryOrders.reduce((sum, order) => sum + (order.deliveryFee || 0), 0);
+    const totalDeliveries = deliveryOrders.length;
+
+    // 4. Top Selling Products
     const productSales: Record<number, { name: string, quantity: number, revenue: number }> = {};
 
     orders.forEach(order => {
@@ -49,6 +54,8 @@ export async function GET() {
       totalSales,
       totalOrdersCount,
       todaysSales,
+      totalDeliveries,
+      totalDeliveryFees,
       topProducts
     });
 

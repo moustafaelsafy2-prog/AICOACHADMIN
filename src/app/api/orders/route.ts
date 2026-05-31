@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { items, totalAmount } = await request.json();
+    const { items, totalAmount, type, deliveryFee, deliveryWorkerId, customerId, paymentType } = await request.json();
 
     // Create the order and items in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -27,6 +27,11 @@ export async function POST(request: Request) {
       const newOrder = await tx.order.create({
         data: {
           totalAmount,
+          type: type || "TAKEAWAY",
+          deliveryFee: parseFloat(deliveryFee) || 0,
+          deliveryWorkerId: deliveryWorkerId ? parseInt(deliveryWorkerId) : null,
+          customerId: customerId ? parseInt(customerId) : null,
+          paymentType: paymentType || "CASH",
           items: {
             create: items.map((item: any) => ({
               productId: item.productId,
@@ -36,20 +41,65 @@ export async function POST(request: Request) {
           }
         },
         include: {
-          items: true
+          items: true,
+          customer: true,
+          deliveryWorker: true
         }
       });
 
-      // 2. Decrement stock for each product
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity
-            }
-          }
+      // 1.5 CRM & Debt Updates
+      if (customerId && paymentType === 'DEBT') {
+        await tx.customer.update({
+          where: { id: parseInt(customerId) },
+          data: { balance: { increment: totalAmount } }
         });
+      }
+
+      if (customerId) {
+        await tx.customer.update({
+          where: { id: parseInt(customerId) },
+          data: { loyaltyPoints: { increment: Math.floor(totalAmount / 10) } } // Example: 1 point per 10 currency
+        });
+      }
+
+      // 1.6 Delivery Worker Balance (if CASH delivery, driver collects money)
+      if (type === 'DELIVERY' && deliveryWorkerId && paymentType === 'CASH') {
+        await tx.deliveryWorker.update({
+          where: { id: parseInt(deliveryWorkerId) },
+          data: { balance: { increment: totalAmount } }
+        });
+      }
+
+      // 2. Decrement stock for each product or its ingredients
+      for (const item of items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          include: { recipeItems: true }
+        });
+
+        if (product?.type === 'COMPOSITE' && product.recipeItems) {
+          // Deduct from ingredients
+          for (const recipeItem of product.recipeItems) {
+            await tx.product.update({
+              where: { id: recipeItem.ingredientId },
+              data: {
+                stock: {
+                  decrement: recipeItem.quantity * item.quantity
+                }
+              }
+            });
+          }
+        } else if (product?.type === 'STANDARD') {
+          // Deduct from standard product
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity
+              }
+            }
+          });
+        }
       }
 
       return newOrder;
@@ -57,6 +107,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: 'Failed to process order' }, { status: 500 });
   }
 }

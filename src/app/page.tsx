@@ -32,6 +32,17 @@ export default function Home() {
   const [shift, setShift] = useState<any>(null);
   const [startCash, setStartCash] = useState('');
 
+  // Checkout Modal State
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [orderType, setOrderType] = useState('TAKEAWAY');
+  const [paymentType, setPaymentType] = useState('CASH');
+  const [customerId, setCustomerId] = useState('');
+  const [deliveryWorkerId, setDeliveryWorkerId] = useState('');
+  const [deliveryFee, setDeliveryFee] = useState('');
+
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
+
   const { settings } = useSettings();
   const currency = settings?.currency || 'ر.س';
 
@@ -39,7 +50,7 @@ export default function Home() {
     try {
       const res = await fetch('/api/products');
       const data = await res.json();
-      setProducts(data);
+      setProducts(data.filter((p: Product) => p.type !== 'INGREDIENT'));
     } catch (error) {
       console.error('Failed to fetch products', error);
     } finally {
@@ -50,7 +61,21 @@ export default function Home() {
   useEffect(() => {
     fetchProducts();
     fetchShift();
+    fetchCustomersAndWorkers();
   }, []);
+
+  const fetchCustomersAndWorkers = async () => {
+    try {
+      const [cRes, wRes] = await Promise.all([
+        fetch('/api/customers'),
+        fetch('/api/delivery')
+      ]);
+      if(cRes.ok) setCustomers(await cRes.json());
+      if(wRes.ok) setWorkers(await wRes.json());
+    } catch (e) {
+      console.error("Failed to load CRM data");
+    }
+  };
 
   const fetchShift = async () => {
     try {
@@ -115,11 +140,24 @@ export default function Home() {
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const handleCheckout = async () => {
+  const initiateCheckout = () => {
+    if (cart.length === 0) return;
+    setShowCheckoutModal(true);
+  };
+
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (cart.length === 0) return;
 
+    const finalTotal = total + (parseFloat(deliveryFee) || 0);
+
     const orderData = {
-      totalAmount: total,
+      totalAmount: finalTotal,
+      type: orderType,
+      paymentType,
+      customerId: customerId || null,
+      deliveryWorkerId: orderType === 'DELIVERY' ? deliveryWorkerId || null : null,
+      deliveryFee: orderType === 'DELIVERY' ? parseFloat(deliveryFee) || 0 : 0,
       items: cart.map(item => ({
         productId: item.id,
         quantity: item.quantity,
@@ -139,11 +177,17 @@ export default function Home() {
         setLastOrder({
           id: orderResponse.id,
           items: [...cart],
-          total: total,
+          total: finalTotal,
           date: new Date().toLocaleString('ar-SA')
         });
+        setShowCheckoutModal(false);
         setShowReceipt(true);
         setCart([]);
+        setOrderType('TAKEAWAY');
+        setPaymentType('CASH');
+        setCustomerId('');
+        setDeliveryWorkerId('');
+        setDeliveryFee('');
         fetchProducts(); // Refresh stock
       } else {
         alert('حدث خطأ أثناء إتمام الطلب.');
@@ -347,7 +391,7 @@ export default function Home() {
             <span className="text-3xl font-black text-indigo-700">{total.toFixed(2)} {currency}</span>
           </div>
           <button
-            onClick={handleCheckout}
+            onClick={initiateCheckout}
             disabled={cart.length === 0}
             className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
               cart.length > 0
@@ -360,6 +404,89 @@ export default function Home() {
           </button>
         </footer>
       </aside>
+
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-lg w-full">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+              <h3 className="font-bold text-2xl text-slate-800 tracking-tight">إتمام الطلب</h3>
+              <button onClick={() => setShowCheckoutModal(false)} className="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors">
+                <FiX className="text-xl" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCheckout} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">نوع الطلب</label>
+                  <select
+                    value={orderType}
+                    onChange={e => {
+                        setOrderType(e.target.value);
+                        if (e.target.value !== 'DELIVERY') {
+                            setDeliveryFee('');
+                            setDeliveryWorkerId('');
+                        }
+                    }}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="TAKEAWAY">سفري (Takeaway)</option>
+                    <option value="DELIVERY">توصيل (Delivery)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">طريقة الدفع</label>
+                  <select value={paymentType} onChange={e => setPaymentType(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="CASH">نقدي (Cash)</option>
+                    <option value="CARD">بطاقة (Card)</option>
+                    <option value="DEBT">آجل / دين (Debt)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">العميل (اختياري)</label>
+                <select required={paymentType === 'DEBT'} value={customerId} onChange={e => setCustomerId(e.target.value)} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <option value="">-- اختر العميل --</option>
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} {c.phone ? `- ${c.phone}` : ''}</option>
+                  ))}
+                </select>
+                {paymentType === 'DEBT' && <p className="text-xs text-rose-500 mt-1">يجب اختيار العميل عند الدفع الآجل لإضافة المديونية لحسابه.</p>}
+              </div>
+
+              {orderType === 'DELIVERY' && (
+                <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">مندوب التوصيل</label>
+                    <select required value={deliveryWorkerId} onChange={e => setDeliveryWorkerId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                      <option value="">-- اختر المندوب --</option>
+                      {workers.map(w => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">رسوم التوصيل</label>
+                    <input type="number" required value={deliveryFee} onChange={e => setDeliveryFee(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-left" dir="ltr" />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-6 border-t border-slate-100">
+                 <div className="flex justify-between items-center mb-6 text-xl">
+                    <span className="text-slate-600 font-bold">الإجمالي النهائي:</span>
+                    <span className="font-black text-indigo-700">{(total + (parseFloat(deliveryFee) || 0)).toFixed(2)} {currency}</span>
+                 </div>
+                 <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-lg shadow-md transition-colors">
+                    تأكيد الطلب
+                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Receipt Modal */}
       {showReceipt && lastOrder && (
