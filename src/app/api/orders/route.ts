@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 
 export async function GET() {
   try {
@@ -19,25 +21,44 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { items, totalAmount, type, deliveryFee, deliveryWorkerId, customerId, paymentType } = await request.json();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { items, type, deliveryFee, deliveryWorkerId, customerId, paymentType } = await request.json();
 
     // Create the order and items in a transaction
     const order = await prisma.$transaction(async (tx) => {
+      // Recalculate totalAmount from the database to prevent client spoofing
+      let calculatedTotalAmount = 0;
+      const parsedDeliveryFee = parseFloat(deliveryFee) || 0;
+      calculatedTotalAmount += parsedDeliveryFee;
+
+      const orderItemsData = [];
+      for (const item of items) {
+         const dbProduct = await tx.product.findUnique({ where: { id: item.productId } });
+         if (!dbProduct) throw new Error(`Product ${item.productId} not found`);
+         const linePrice = dbProduct.price * item.quantity;
+         calculatedTotalAmount += linePrice;
+         orderItemsData.push({
+           productId: item.productId,
+           quantity: item.quantity,
+           price: dbProduct.price
+         });
+      }
+
       // 1. Create order
       const newOrder = await tx.order.create({
         data: {
-          totalAmount,
+          totalAmount: calculatedTotalAmount,
           type: type || "TAKEAWAY",
-          deliveryFee: parseFloat(deliveryFee) || 0,
+          deliveryFee: parsedDeliveryFee,
           deliveryWorkerId: deliveryWorkerId ? parseInt(deliveryWorkerId) : null,
           customerId: customerId ? parseInt(customerId) : null,
           paymentType: paymentType || "CASH",
           items: {
-            create: items.map((item: any) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-            }))
+            create: orderItemsData
           }
         },
         include: {
@@ -51,14 +72,14 @@ export async function POST(request: Request) {
       if (customerId && paymentType === 'DEBT') {
         await tx.customer.update({
           where: { id: parseInt(customerId) },
-          data: { balance: { increment: totalAmount } }
+          data: { balance: { increment: calculatedTotalAmount } }
         });
       }
 
       if (customerId) {
         await tx.customer.update({
           where: { id: parseInt(customerId) },
-          data: { loyaltyPoints: { increment: Math.floor(totalAmount / 10) } } // Example: 1 point per 10 currency
+          data: { loyaltyPoints: { increment: Math.floor(calculatedTotalAmount / 10) } } // Example: 1 point per 10 currency
         });
       }
 
@@ -66,7 +87,7 @@ export async function POST(request: Request) {
       if (type === 'DELIVERY' && deliveryWorkerId && paymentType === 'CASH') {
         await tx.deliveryWorker.update({
           where: { id: parseInt(deliveryWorkerId) },
-          data: { balance: { increment: totalAmount } }
+          data: { balance: { increment: calculatedTotalAmount } }
         });
       }
 
