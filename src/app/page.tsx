@@ -24,6 +24,8 @@ type CartItem = Product & {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
@@ -31,6 +33,8 @@ export default function Home() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [shift, setShift] = useState<any>(null);
   const [startCash, setStartCash] = useState('');
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calcInput, setCalcInput] = useState('');
 
   // Checkout Modal State
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -48,11 +52,16 @@ export default function Home() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/products');
+      const [res, catRes] = await Promise.all([
+         fetch('/api/products'),
+         fetch('/api/categories')
+      ]);
       const data = await res.json();
+      const catData = await catRes.json();
       setProducts(data.filter((p: Product) => p.type !== 'INGREDIENT'));
+      setCategories(catData);
     } catch (error) {
-      console.error('Failed to fetch products', error);
+      console.error('Failed to fetch data', error);
     } finally {
       setLoading(false);
     }
@@ -63,6 +72,10 @@ export default function Home() {
     fetchShift();
     fetchCustomersAndWorkers();
   }, []);
+
+  const filteredProducts = selectedCategory
+    ? products.filter(p => (p as any).categoryId === selectedCategory)
+    : products;
 
   const fetchCustomersAndWorkers = async () => {
     try {
@@ -277,6 +290,9 @@ export default function Home() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-slate-800">المنتجات</h1>
+              <button onClick={() => setShowCalculator(true)} className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center transition-colors">
+                🖩 آلة حاسبة
+              </button>
               <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> وردية مفتوحة
               </span>
@@ -302,13 +318,40 @@ export default function Home() {
           </form>
         </header>
 
-        {products.length === 0 ? (
+        {/* Categories Bar */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-4 hide-scrollbar">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all ${
+              selectedCategory === null
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            الكل
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-6 py-3 rounded-full font-bold whitespace-nowrap transition-all ${
+                selectedCategory === cat.id
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 ? (
           <div className="text-center py-20 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300">
             لا توجد منتجات حالياً.
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
@@ -484,6 +527,57 @@ export default function Home() {
                  </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Calculator Modal */}
+      {showCalculator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm print:hidden">
+          <div className="bg-slate-800 p-6 rounded-3xl shadow-2xl w-80 relative">
+            <div className="flex justify-between items-center mb-4 text-white">
+              <h3 className="font-bold text-lg">آلة حاسبة</h3>
+              <button onClick={() => setShowCalculator(false)} className="text-slate-400 hover:text-white transition-colors">
+                <FiX className="text-xl" />
+              </button>
+            </div>
+
+            <div className="bg-slate-900 rounded-xl p-4 mb-4 text-right overflow-hidden break-all min-h-[80px] flex flex-col justify-end">
+              <div className="text-3xl font-mono text-white tracking-wider">{calcInput || '0'}</div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {['C', '(', ')', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', '⌫', '='].map((btn) => (
+                <button
+                  key={btn}
+                  onClick={() => {
+                    if (btn === 'C') setCalcInput('');
+                    else if (btn === '⌫') setCalcInput(prev => prev.slice(0, -1));
+                    else if (btn === '=') {
+                      try {
+                        // Safe evaluation for simple math
+                        // eslint-disable-next-line no-new-func
+                        const result = new Function('return ' + calcInput)();
+                        setCalcInput(String(Number.isFinite(result) ? result : 'Error'));
+                      } catch (e) {
+                        setCalcInput('Error');
+                      }
+                    } else {
+                      if (calcInput === 'Error') setCalcInput(btn);
+                      else setCalcInput(prev => prev + btn);
+                    }
+                  }}
+                  className={`p-4 rounded-xl text-xl font-bold transition-colors ${
+                    btn === '=' ? 'bg-indigo-600 hover:bg-indigo-500 text-white' :
+                    ['/', '*', '-', '+'].includes(btn) ? 'bg-orange-500 hover:bg-orange-400 text-white' :
+                    btn === 'C' || btn === '⌫' ? 'bg-rose-500 hover:bg-rose-400 text-white' :
+                    'bg-slate-700 hover:bg-slate-600 text-white'
+                  }`}
+                >
+                  {btn}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
