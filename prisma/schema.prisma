@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -39,69 +38,38 @@ model Category {
 }
 
 model Product {
-  id          Int          @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   price       Float
-  stock       Float        @default(0)
-  unit        String       @default("قطعة") // "قطعة", "جرام", "مل", etc.
-  type        String       @default("STANDARD") // "STANDARD", "COMPOSITE", "INGREDIENT"
-  barcode     String?      @unique
+  stock       Int         @default(0)
+  barcode     String?     @unique
   imageUrl    String?
   categoryId  Int?
-  category    Category?    @relation(fields: [categoryId], references: [id])
+  category    Category?   @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
-  recipeItems RecipeItem[] @relation("CompositeProduct")
-  usedIn      RecipeItem[] @relation("IngredientProduct")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
-model RecipeItem {
-  id            Int      @id @default(autoincrement())
-  productId     Int      // The composite product
-  product       Product  @relation("CompositeProduct", fields: [productId], references: [id], onDelete: Cascade)
-  ingredientId  Int      // The raw material/ingredient
-  ingredient    Product  @relation("IngredientProduct", fields: [ingredientId], references: [id])
-  quantity      Float    // Amount of ingredient needed
-}
-
-model DeliveryWorker {
+model Customer {
   id          Int       @id @default(autoincrement())
   name        String
   phone       String?
-  balance     Float     @default(0) // Money collected from cash deliveries
+  email       String?
   orders      Order[]
+  balance     Float     @default(0) // For tracking debt
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
-model Customer {
-  id            Int       @id @default(autoincrement())
-  name          String
-  phone         String?
-  email         String?
-  address       String?
-  notes         String?
-  loyaltyPoints Int       @default(0)
-  orders        Order[]
-  balance       Float     @default(0) // For tracking debt
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
 model Order {
-  id               Int             @id @default(autoincrement())
-  totalAmount      Float
-  items            OrderItem[]
-  type             String          @default("TAKEAWAY") // "TAKEAWAY", "DELIVERY"
-  deliveryFee      Float           @default(0)
-  deliveryWorkerId Int?
-  deliveryWorker   DeliveryWorker? @relation(fields: [deliveryWorkerId], references: [id])
-  customerId       Int?
-  customer         Customer?       @relation(fields: [customerId], references: [id])
-  paymentType      String          @default("CASH") // "CASH", "CARD", "DEBT"
-  status           String          @default("COMPLETED") // "COMPLETED", "RETURNED", "CANCELLED"
-  createdAt        DateTime        @default(now())
+  id          Int         @id @default(autoincrement())
+  totalAmount Float
+  items       OrderItem[]
+  customerId  Int?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  paymentType String      @default("CASH") // "CASH", "CARD", "DEBT"
+  createdAt   DateTime    @default(now())
 }
 
 model OrderItem {
