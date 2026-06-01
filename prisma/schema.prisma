@@ -100,6 +100,7 @@ model Order {
   customerId       Int?
   customer         Customer?       @relation(fields: [customerId], references: [id])
   paymentType      String          @default("CASH") // "CASH", "CARD", "DEBT"
+  status           String          @default("COMPLETED") // "COMPLETED", "RETURNED", "CANCELLED"
   createdAt        DateTime        @default(now())
 }
 
